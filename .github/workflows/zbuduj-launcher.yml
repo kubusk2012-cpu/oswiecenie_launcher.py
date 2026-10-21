@@ -17,9 +17,9 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -36,7 +36,7 @@ jobs:
       - name: Sprawdź, czy kod się wczytuje
         run: python -c "import oswiecenie_launcher as m; print(m.LAUNCHER_VERSION, m.DEFAULT_CONFIG['github_repo'])"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: Oswiecenie-Launcher
           path: dist/Oswiecenie-Launcher.exe
@@ -48,6 +48,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $tag = "${{ github.ref_name }}"
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag dist/Oswiecenie-Launcher.exe --clobber
+            exit $LASTEXITCODE
+          }
           gh release create $tag dist/Oswiecenie-Launcher.exe `
             --title "Launcher $($tag -replace 'launcher-v','')" `
             --notes "Launcher moda Epoka Oświecenia. Pobierz Oswiecenie-Launcher.exe i uruchom. Przy pierwszym uruchomieniu Windows może pokazać ostrzeżenie SmartScreen: Więcej informacji → Uruchom mimo to." `
