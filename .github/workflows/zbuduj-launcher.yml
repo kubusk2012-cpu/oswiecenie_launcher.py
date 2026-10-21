@@ -1,0 +1,54 @@
+# Buduje Oswiecenie-Launcher.exe na Windowsie w chmurze GitHuba.
+# - każda zmiana w kodzie launchera: plik .exe do pobrania w zakładce Actions (Artifacts)
+# - tag launcher-v* (np. launcher-v1.0.0): .exe dołączony do wydania w zakładce Releases
+name: Zbuduj launcher
+
+on:
+  push:
+    branches: [main]
+    paths: ["oswiecenie_launcher.py", "ikona.ico", ".github/workflows/zbuduj-launcher.yml"]
+    tags: ["launcher-v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Zainstaluj PyInstaller
+        run: python -m pip install pyinstaller==6.11.1
+
+      - name: Zbuduj .exe
+        shell: pwsh
+        run: |
+          $ikona = @()
+          if (Test-Path ikona.ico) { $ikona = @("--icon", "ikona.ico") }
+          python -m PyInstaller --noconfirm --onefile --windowed --name Oswiecenie-Launcher @ikona oswiecenie_launcher.py
+
+      - name: Sprawdź, czy kod się wczytuje
+        run: python -c "import oswiecenie_launcher as m; print(m.LAUNCHER_VERSION, m.DEFAULT_CONFIG['github_repo'])"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Oswiecenie-Launcher
+          path: dist/Oswiecenie-Launcher.exe
+
+      - name: Dołącz do wydania
+        if: startsWith(github.ref, 'refs/tags/launcher-v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          gh release create $tag dist/Oswiecenie-Launcher.exe `
+            --title "Launcher $($tag -replace 'launcher-v','')" `
+            --notes "Launcher moda Epoka Oświecenia. Pobierz Oswiecenie-Launcher.exe i uruchom. Przy pierwszym uruchomieniu Windows może pokazać ostrzeżenie SmartScreen: Więcej informacji → Uruchom mimo to." `
+            --latest=false
