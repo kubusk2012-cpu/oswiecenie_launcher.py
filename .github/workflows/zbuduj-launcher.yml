@@ -1,13 +1,13 @@
 # Buduje Oswiecenie-Launcher.exe na Windowsie w chmurze GitHuba.
 # - każda zmiana w kodzie launchera: plik .exe do pobrania w zakładce Actions (Artifacts)
-# - tag launcher-v* (np. launcher-v1.0.0): .exe dołączony do wydania w zakładce Releases
+# - gdy LAUNCHER_VERSION w oswiecenie_launcher.py nie ma jeszcze wydania
+#   launcher-v<wersja>, workflow sam je tworzy i dołącza .exe (zakładka Releases)
 name: Zbuduj launcher
 
 on:
   push:
     branches: [main]
     paths: ["oswiecenie_launcher.py", "ikona.ico", ".github/workflows/zbuduj-launcher.yml"]
-    tags: ["launcher-v*"]
   workflow_dispatch:
 
 permissions:
@@ -41,19 +41,21 @@ jobs:
           name: Oswiecenie-Launcher
           path: dist/Oswiecenie-Launcher.exe
 
-      - name: Dołącz do wydania
-        if: startsWith(github.ref, 'refs/tags/launcher-v')
+      - name: Opublikuj wydanie launchera
+        if: github.ref == 'refs/heads/main'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = "${{ github.ref_name }}"
+          $ver = python -c "import oswiecenie_launcher as m; print(m.LAUNCHER_VERSION)"
+          $tag = "launcher-v$ver"
           gh release view $tag *> $null
           if ($LASTEXITCODE -eq 0) {
-            gh release upload $tag dist/Oswiecenie-Launcher.exe --clobber
-            exit $LASTEXITCODE
+            Write-Host "Wydanie $tag już istnieje — podbij LAUNCHER_VERSION, żeby opublikować nowe."
+            exit 0
           }
           gh release create $tag dist/Oswiecenie-Launcher.exe `
-            --title "Launcher $($tag -replace 'launcher-v','')" `
+            --target $env:GITHUB_SHA `
+            --title "Launcher $ver" `
             --notes "Launcher moda Epoka Oświecenia. Pobierz Oswiecenie-Launcher.exe i uruchom. Przy pierwszym uruchomieniu Windows może pokazać ostrzeżenie SmartScreen: Więcej informacji → Uruchom mimo to." `
             --latest=false

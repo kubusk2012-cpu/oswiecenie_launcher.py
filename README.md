@@ -45,9 +45,10 @@ Launcher buduje się sam w GitHub Actions (`.github/workflows/zbuduj-launcher.ym
 
 - po każdej zmianie `oswiecenie_launcher.py` gotowy `.exe` jest w zakładce
   **Actions** → ostatni przebieg → **Artifacts**;
-- żeby opublikować go dla graczy, utwórz tag `launcher-v<wersja>` (np. przy tworzeniu
-  wydania wpisz tag `launcher-v1.0.1`, albo `git tag launcher-v1.0.1 && git push --tags`) —
-  `.exe` zostanie dołączony do wydania automatycznie.
+- żeby opublikować nową wersję dla graczy, podbij `LAUNCHER_VERSION` na początku
+  `oswiecenie_launcher.py` (np. `1.0.0` → `1.0.1`) — workflow sam utworzy wydanie
+  `launcher-v1.0.1` z dołączonym `.exe`. Wydania launchera nie są oznaczane jako „Latest”,
+  a sam launcher je pomija przy szukaniu wersji moda.
 
 Lokalnie można też zbudować `.exe` przez `build.bat`.
 Własna ikona: dodaj plik `ikona.ico` do repozytorium.
